@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Broken.Scripts.Ingame.Weapons;
 using Broken.Scripts.Interface;
 using UnityEngine;
 

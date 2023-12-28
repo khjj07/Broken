@@ -14,6 +14,11 @@ namespace Broken.Scripts.Systems.Global
             DontDestroyOnLoad(gameObject);
         }
 
+        public IObservable<Vector2> CreateGetAnyAxisStream()
+        {
+            return this.UpdateAsObservable().Select(_ => new Vector2(Input.GetAxis("Vertical") , Input.GetAxis("Horizontal")));
+        }
+
         public IObservable<float> CreateGetAxisStream(string axis)
         {
             return this.UpdateAsObservable().Select(_ => Input.GetAxis(axis));

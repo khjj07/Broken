@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Broken.Scripts.Ingame.Weapons;
 using Broken.Scripts.Interface;
 using Broken.Scripts.Systems.Global;
 using DG.Tweening;
@@ -26,15 +27,16 @@ namespace Broken.Scripts.Ingame
         [SerializeField] private float dodgeDistance = 1.0f;
         [SerializeField] private float dodgeSpeed = 1.0f;
 
-
-
         [SerializeField]
         private List<Weapon> weaponSlot;
+
         [SerializeField]
         private int weaponSlotCapacity = 1;
 
-        private bool _dodge= false;
-        private bool _attack= false;
+        public ReactiveProperty<Weapon> _equipedWeapon;
+
+        private bool _dodgable= true;
+        private bool _attackable= true;
 
         private Vector3 _position;
         private Animator _animator;
@@ -42,8 +44,12 @@ namespace Broken.Scripts.Ingame
 
         public Subject<IEquipable> equipSubject = new Subject<IEquipable>();
         public Subject<State> stateSubject = new Subject<State>();
+
+
         private static readonly int AnimWalk = Animator.StringToHash("Walk");
         private static readonly int AnimDodge = Animator.StringToHash("Dodge");
+        private static readonly int AnimAttack = Animator.StringToHash("Attack");
+
 
         // Start is called before the first frame update
         private void Awake()
@@ -53,21 +59,16 @@ namespace Broken.Scripts.Ingame
 
         void Start()
         {
-            this.OnTriggerEnterAsObservable().Subscribe(CheckInteractableTarget).AddTo(gameObject);
-
-            this.UpdateAsObservable().Where(_=> !_dodge).Subscribe(_ => SetState(State.Idle)).AddTo(gameObject);
-            this.UpdateAsObservable().Where(_=> !_attack).Subscribe(_ => UpdateDirection()).AddTo(gameObject);
-
-            var moveHorizontalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Horizontal");
+            var moveHorizontalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Horizontal").Where(x => math.abs(x) > 0);
             {
                 moveHorizontalStream.Subscribe(MoveX).AddTo(gameObject);
-                moveHorizontalStream.Where(x => math.abs(x) > 0).Where(_ => !_dodge).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
+                moveHorizontalStream.Where(_ => _dodgable).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
             }
 
-            var moveVerticalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Vertical");
+            var moveVerticalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Vertical").Where(x => math.abs(x) > 0);
             {
                 moveVerticalStream.Subscribe(MoveZ).AddTo(gameObject);
-                moveVerticalStream.Where(x=>math.abs(x)>0).Where(_ => !_dodge).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
+                moveVerticalStream.Where(_ => _dodgable).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
             }
 
             var dodgeStream = GlobalInputBinder.Instance.CreateGetKeyDownStream(KeyCode.Space);
@@ -76,13 +77,21 @@ namespace Broken.Scripts.Ingame
                 dodgeStream.Subscribe(_ => SetState(State.Dodge)).AddTo(gameObject);
             }
 
-            var attackStream = GlobalInputBinder.Instance.CreateGetMouseButtonStream(0);
+            var attackStream = GlobalInputBinder.Instance.CreateGetMouseButtonDownStream(0);
             {
-                attackStream.Select(_ => GetAttackDirection(Input.mousePosition)).Subscribe(x => TryAttack(x)).AddTo(gameObject);
-                attackStream.Subscribe(_ => SetState(State.Attack)).AddTo(gameObject);
+                attackStream.Select(_ => GetAttackDirection(Input.mousePosition)).Subscribe(x => Look(x)).AddTo(gameObject);
             }
-            equipSubject.Subscribe(TryEquip);
 
+            this.OnTriggerEnterAsObservable().Subscribe(CheckInteractableTarget).AddTo(gameObject);
+
+            var doNotMoveStream = GlobalInputBinder.Instance.CreateGetAnyAxisStream().Where(v => v.magnitude <= 0);
+
+            doNotMoveStream.Subscribe(_=>Debug.Log(_));
+            doNotMoveStream.Subscribe(_ => SetState(State.Idle)).AddTo(gameObject);
+
+            this.UpdateAsObservable().Where(_ => _state==State.Walk).Subscribe(_ => UpdateDirection()).AddTo(gameObject);
+
+            equipSubject.Subscribe(TryEquip);
             stateSubject.Subscribe(Animate);
         }
 
@@ -93,16 +102,31 @@ namespace Broken.Scripts.Ingame
                 case State.Idle:
                     _animator.SetBool(AnimWalk, false);
                     _animator.SetBool(AnimDodge, false);
+                    _animator.SetInteger(AnimAttack, 0);
                     break;
                 case State.Walk:
                     _animator.SetBool(AnimWalk, true);
                     _animator.SetBool(AnimDodge, false);
+                    _animator.SetInteger(AnimAttack, 0);
                     break;
                 case State.Dodge:
                     _animator.SetBool(AnimDodge, true);
+                    _animator.SetInteger(AnimAttack, 0);
                     break;
             }
         }
+
+
+        public void AnimateAttack(int number)
+        {
+            switch (_state)
+            {
+                case State.Attack:
+                    _animator.SetInteger(AnimAttack, number);
+                    break;
+            }
+        }
+
         private void KeepWeapon(IEquipable equipment)
         {
             weaponSlot.Add(equipment as Weapon);
@@ -113,13 +137,13 @@ namespace Broken.Scripts.Ingame
             {
                 weaponSlot[0] = equipment as Weapon;
                 var prevWeapon = weaponSlot[0];
-                prevWeapon.OnUnequip();
-                weaponSlot[0].OnEquip();
+                prevWeapon.OnUnequip(this);
+                weaponSlot[0].OnEquip(this);
             }
             else
             {
                 weaponSlot[0] = equipment as Weapon;
-                weaponSlot[0].OnEquip();
+                weaponSlot[0].OnEquip(this);
             }
         }
         private void TryEquip(IEquipable equipment)
@@ -158,9 +182,9 @@ namespace Broken.Scripts.Ingame
                 .SetSpeedBased(true)
                 .OnComplete(() =>
                 {
-                    _dodge = false;
+                    _dodgable = true;
                 });
-            _dodge = true;
+            _dodgable = false;
         }
         private void MoveX(float direction)
         {
@@ -201,14 +225,9 @@ namespace Broken.Scripts.Ingame
             return Vector3.zero;
         }
 
-        private void TryAttack(Vector3 direction)
-        {
-            if (!_attack)
-            {
-                _attack = true;
-                transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
-                Observable.Timer(TimeSpan.FromSeconds(1)).Subscribe(_ => _attack = false);
-            }
+        private void Look(Vector3 direction)
+        { 
+            transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
         }
 
         private void Update()
