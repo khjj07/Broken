@@ -28408,6 +28408,7 @@ GameObject:
   - component: {fileID: 6883821013515466906}
   - component: {fileID: 1918399516936462462}
   - component: {fileID: 3450727431967539596}
+  - component: {fileID: 6883821013515466907}
   m_Layer: 0
   m_Name: 1H_Sword
   m_TagString: Untagged
@@ -28994,6 +28995,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 182480784256878671}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6883821013515466907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4252786321116957836}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5587e5c4ed5f4e4ca6443e89adbb490, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animatorController: {fileID: 22100000, guid: 2c04e7f734135674ea1663dd26918025, type: 2}
+  attackFrame: 3
 --- !u!1 &6969124906055318064
 GameObject:
   m_ObjectHideFlags: 0
@@ -29189,6 +29204,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6963854910787058502, guid: 11ce5df0868cf5a49bde4ad192ac4ba4,
         type: 3}
+      propertyPath: hand
+      value: 
+      objectReference: {fileID: 6809467736569651045}
+    - target: {fileID: 6963854910787058502, guid: 11ce5df0868cf5a49bde4ad192ac4ba4,
+        type: 3}
       propertyPath: dodgeSpeed
       value: 10
       objectReference: {fileID: 0}
@@ -29197,6 +29217,16 @@ PrefabInstance:
       propertyPath: dodgeDistance
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 6963854910787058502, guid: 11ce5df0868cf5a49bde4ad192ac4ba4,
+        type: 3}
+      propertyPath: weaponSlot.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6963854910787058502, guid: 11ce5df0868cf5a49bde4ad192ac4ba4,
+        type: 3}
+      propertyPath: weaponSlot.Array.data[0]
+      value: 
+      objectReference: {fileID: 6883821013515466907}
     - target: {fileID: 7048707269785244240, guid: 11ce5df0868cf5a49bde4ad192ac4ba4,
         type: 3}
       propertyPath: m_LocalPosition.x

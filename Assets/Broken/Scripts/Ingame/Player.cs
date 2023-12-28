@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Broken.Scripts.Ingame.Weapons;
 using Broken.Scripts.Interface;
 using Broken.Scripts.Systems.Global;
@@ -27,13 +28,16 @@ namespace Broken.Scripts.Ingame
         [SerializeField] private float dodgeDistance = 1.0f;
         [SerializeField] private float dodgeSpeed = 1.0f;
 
+        public ReactiveProperty<Weapon> equipedWeapon= new ReactiveProperty<Weapon>();
+
+        [SerializeField] private Transform hand;
+
         [SerializeField]
-        private List<Weapon> weaponSlot;
+        private List<Weapon> weaponSlot = new();
 
         [SerializeField]
         private int weaponSlotCapacity = 1;
 
-        public ReactiveProperty<Weapon> _equipedWeapon;
 
         private bool _dodgable= true;
         private bool _attackable= true;
@@ -42,9 +46,8 @@ namespace Broken.Scripts.Ingame
         private Animator _animator;
         private State _state;
 
-        public Subject<IEquipable> equipSubject = new Subject<IEquipable>();
-        public Subject<State> stateSubject = new Subject<State>();
-
+        public Subject<IEquipable> equipSubject = new();
+        public Subject<State> stateSubject = new();
 
         private static readonly int AnimWalk = Animator.StringToHash("Walk");
         private static readonly int AnimDodge = Animator.StringToHash("Dodge");
@@ -91,8 +94,10 @@ namespace Broken.Scripts.Ingame
 
             this.UpdateAsObservable().Where(_ => _state==State.Walk).Subscribe(_ => UpdateDirection()).AddTo(gameObject);
 
-            equipSubject.Subscribe(TryEquip);
+            equipSubject.Subscribe(EquipWeapon);
             stateSubject.Subscribe(Animate);
+            equipedWeapon.Subscribe(x=>x.OnEquip(this));
+            equipSubject.OnNext(weaponSlot[0]);
         }
 
         private void Animate(State state)
@@ -119,6 +124,7 @@ namespace Broken.Scripts.Ingame
 
         public void AnimateAttack(int number)
         {
+            Debug.Log("Attack"+number);
             switch (_state)
             {
                 case State.Attack:
@@ -133,30 +139,9 @@ namespace Broken.Scripts.Ingame
         }
         private void EquipWeapon(IEquipable equipment)
         {
-            if (weaponSlot[0] != null)
-            {
-                weaponSlot[0] = equipment as Weapon;
-                var prevWeapon = weaponSlot[0];
-                prevWeapon.OnUnequip(this);
-                weaponSlot[0].OnEquip(this);
-            }
-            else
-            {
-                weaponSlot[0] = equipment as Weapon;
-                weaponSlot[0].OnEquip(this);
-            }
+            equipedWeapon.Value = equipment as Weapon;
         }
-        private void TryEquip(IEquipable equipment)
-        {
-            if (weaponSlot.Count != 0 && weaponSlot.Count < weaponSlotCapacity)
-            {
-                KeepWeapon(equipment);
-            }
-            else
-            {
-                EquipWeapon(equipment);
-            }
-        }
+        
         private void CheckInteractableTarget(Collider collider)
         {
             var item = collider.GetComponent<IInteractable>();
