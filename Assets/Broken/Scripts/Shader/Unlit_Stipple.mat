@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Unlit_NewUnlitShader
-  m_Shader: {fileID: 4800000, guid: 7acd09f23e982d841a86a838cbddc746, type: 3}
+  m_Name: Unlit_Stipple
+  m_Shader: {fileID: 4800000, guid: cfe7cc3fa34accd438245154071e1390, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -23,15 +23,17 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _DitherTex:
+        m_Texture: {fileID: 2800000, guid: e2c49688d5f9e57448e7381b2efc2f72, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _MainTex:
         m_Texture: {fileID: 2800000, guid: 53c07328abcc400408a4b3fb9fdeab41, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _PixelCountU: 10
-    - _PixelCountV: 10
-    - _PixelSize: 14
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _AliasingStrength: 0
+    - _DitherStrength: 0.73
+    m_Colors: []
   m_BuildTextureStacks: []
