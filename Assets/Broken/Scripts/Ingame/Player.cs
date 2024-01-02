@@ -1,13 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using Broken.Scripts.Ingame.Weapons;
 using Broken.Scripts.Interface;
 using Broken.Scripts.Systems.Global;
 using DG.Tweening;
 using UniRx;
 using UniRx.Triggers;
-using Unity.Burst.CompilerServices;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -28,7 +26,7 @@ namespace Broken.Scripts.Ingame
         [SerializeField] private float dodgeDistance = 1.0f;
         [SerializeField] private float dodgeSpeed = 1.0f;
 
-        public ReactiveProperty<Weapon> equipedWeapon= new ReactiveProperty<Weapon>();
+        public ReactiveProperty<Weapon> equipedWeapon;
 
         [SerializeField] private Transform hand;
 
@@ -65,13 +63,13 @@ namespace Broken.Scripts.Ingame
             var moveHorizontalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Horizontal").Where(x => math.abs(x) > 0);
             {
                 moveHorizontalStream.Subscribe(MoveX).AddTo(gameObject);
-                moveHorizontalStream.Where(_ => _dodgable).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
+                moveHorizontalStream.Where(_ => _dodgable && _state != State.Attack).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
             }
 
             var moveVerticalStream = GlobalInputBinder.Instance.CreateGetAxisStream("Vertical").Where(x => math.abs(x) > 0);
             {
                 moveVerticalStream.Subscribe(MoveZ).AddTo(gameObject);
-                moveVerticalStream.Where(_ => _dodgable).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
+                moveVerticalStream.Where(_ => _dodgable && _state!=State.Attack).Subscribe(_ => SetState(State.Walk)).AddTo(gameObject);
             }
 
             var dodgeStream = GlobalInputBinder.Instance.CreateGetKeyDownStream(KeyCode.Space);
@@ -89,15 +87,19 @@ namespace Broken.Scripts.Ingame
 
             var doNotMoveStream = GlobalInputBinder.Instance.CreateGetAnyAxisStream().Where(v => v.magnitude <= 0);
 
-            doNotMoveStream.Subscribe(_=>Debug.Log(_));
-            doNotMoveStream.Subscribe(_ => SetState(State.Idle)).AddTo(gameObject);
+            //doNotMoveStream.Subscribe(_=>Debug.Log(_));
+            doNotMoveStream.Where(_=>_state!=State.Attack).Subscribe(_ => SetState(State.Idle)).AddTo(gameObject);
 
             this.UpdateAsObservable().Where(_ => _state==State.Walk).Subscribe(_ => UpdateDirection()).AddTo(gameObject);
 
             equipSubject.Subscribe(EquipWeapon);
             stateSubject.Subscribe(Animate);
-            equipedWeapon.Subscribe(x=>x.OnEquip(this));
-            equipSubject.OnNext(weaponSlot[0]);
+            equipedWeapon = new ReactiveProperty<Weapon>(weaponSlot[0]);
+            equipedWeapon.Subscribe(x=>
+            {
+                x.OnEquip(this);
+            });
+            
         }
 
         private void Animate(State state)
@@ -107,30 +109,28 @@ namespace Broken.Scripts.Ingame
                 case State.Idle:
                     _animator.SetBool(AnimWalk, false);
                     _animator.SetBool(AnimDodge, false);
-                    _animator.SetInteger(AnimAttack, 0);
                     break;
                 case State.Walk:
                     _animator.SetBool(AnimWalk, true);
                     _animator.SetBool(AnimDodge, false);
-                    _animator.SetInteger(AnimAttack, 0);
                     break;
                 case State.Dodge:
                     _animator.SetBool(AnimDodge, true);
-                    _animator.SetInteger(AnimAttack, 0);
                     break;
             }
         }
 
 
-        public void AnimateAttack(int number)
+        public void Attack(int number)
         {
-            Debug.Log("Attack"+number);
-            switch (_state)
-            {
-                case State.Attack:
-                    _animator.SetInteger(AnimAttack, number);
-                    break;
-            }
+            _state = State.Attack; 
+            _animator.SetInteger(AnimAttack, number);
+        }
+
+        public void AttackEnd()
+        {
+            _state = State.Idle;
+            _animator.SetInteger(AnimAttack, 0);
         }
 
         private void KeepWeapon(IEquipable equipment)
