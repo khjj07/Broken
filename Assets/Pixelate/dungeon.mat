@@ -42,17 +42,21 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Brightness: 3
+    - _Brightness: 2
     - _Density: 1
+    - _DitherPower: 1
     - _Dithering: 1
-    - _Power: 0.9
+    - _Outline: 1
+    - _Power: 1
     - _QueueControl: 0
     - _QueueOffset: 0
     - _Scale: 1.05
-    - _Size: 0.3
+    - _Size: 1
+    - _Threshold: 1
     - _prop: 1.5
     m_Colors:
     - _Dithering: {r: 0, g: 0, b: 0, a: 0}
+    - _LightDir: {r: 40, g: 100, b: -100, a: 0}
     - _LightDirection: {r: 40, g: 100, b: 100, a: 0}
   m_BuildTextureStacks: []
 --- !u!114 &3196925379790968111
